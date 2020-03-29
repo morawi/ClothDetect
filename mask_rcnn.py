@@ -5,9 +5,6 @@ Created on Tue Mar 24 13:35:25 2020
 @author: malrawi
 """
 
-# https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html
-
-# from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from datasets import number_of_classes
 from models import get_model_instance_segmentation
 from engine import train_one_epoch, evaluate
@@ -43,6 +40,7 @@ parser.add_argument("--train_percentage", type=float, default=0.8, help="percent
 parser.add_argument("--experiment_name", type=str, default=None, help="name of the folder inside saved_models")
 
 
+
 opt = parser.parse_args()
 
 if platform.system()=='Windows':
@@ -50,13 +48,13 @@ if platform.system()=='Windows':
 
 opt.train_shuffle = False
 opt.batch_size = 2
-opt.num_epochs = 2
+opt.num_epochs = 11
 opt.print_freq = 10
-opt.checkpoint_interval=1
-opt.train_percentage=0.02 # to be used for debugging with low number of samples
+opt.checkpoint_interval=10
+opt.train_percentage=0.80 #0.02 # to be used for debugging with low number of samples
 opt.epoch=0
-opt.experiment_name = 'ClothCoParse-mask_rcnn-Mar-26-at-21-2'
-
+opt.experiment_name = None # 'ClothCoParse-mask_rcnn-Mar-26-at-21-2'
+opt.sample_interval=5
 
 def sample_images(data_loader_test, model, device):
     images,targets = next(iter(data_loader_test)) # grab the images
@@ -64,6 +62,8 @@ def sample_images(data_loader_test, model, device):
     model.eval()  # setting model to evaluation mode
     predictions = model(images)           # Returns predictions
     model.train() # putting back the model into train status/mode 
+    
+    
     ''' TODO: Do something with the predictions, ie display / save '''
     
 
@@ -118,17 +118,18 @@ for epoch in range(opt.num_epochs):
     lr_scheduler.step()
     # evaluate on the test dataset    
     
-    evaluate(model, data_loader, device=device) # used for debugging
-    
-    # evaluate(model, data_loader_test, device=device)
-    
+    if epoch % opt.sample_interval == 0:
+        # evaluate(model, data_loader, device=device) # used for debugging
+        evaluate(model, data_loader_test, device=device)
+        
     
     if opt.checkpoint_interval != -1 and epoch % opt.checkpoint_interval== 0:
        # Save model checkpoints
+       print('Saving model')
        torch.save(model.state_dict(), "saved_models/%s/maskrcnn_%d.pth" % (opt.experiment_name, epoch))
        
 
-sample_images(data_loader_test, model, device)
+# sample_images(data_loader_test, model, device)
 
 print("All done")
 
