@@ -76,7 +76,7 @@ class ImageDataset(Dataset):
         boxes = torch.as_tensor(boxes, dtype=torch.float32)
         
         # there is only one class
-        # labels = torch.ones((num_objs,), dtype=torch.int64)
+        # labels = torch.ones((num_objs,), dtype=torch.int64) # original, works only for two class problem
         labels = torch.as_tensor(obj_ids, dtype=torch.int64) # corrected by Rawi
                 
         masks = torch.as_tensor(masks, dtype=torch.uint8)
