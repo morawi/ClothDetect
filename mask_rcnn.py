@@ -81,7 +81,7 @@ elif opt.epoch !=0 and opt.experiment_name is not None:
     opt.experiment_name = opt.dataset_name +'/'+ opt.experiment_name
 else: # totaly new experiment        
     dt = datetime.datetime.today()
-    opt.experiment_name = opt.dataset_name+'/'+"-mask_rcnn-"+calendar.month_abbr[dt.month]+"-"+str(dt.day)+'-at-'+str(dt.hour) +'-'+str(dt.minute)
+    opt.experiment_name = opt.dataset_name+'/'+"mask_rcnn-"+calendar.month_abbr[dt.month]+"-"+str(dt.day)+'-at-'+str(dt.hour) +'-'+str(dt.minute)
     os.makedirs("images/%s" % opt.experiment_name, exist_ok=True)
     os.makedirs("saved_models/%s" % opt.experiment_name, exist_ok=True)
 
