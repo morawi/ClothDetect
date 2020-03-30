@@ -13,6 +13,20 @@ import torch
 import utils
 
 
+def sample_images(images, targets, model, device):    
+    images = list(image.to(device) for image in images)
+    model.eval()  # setting model to evaluation mode
+    with torch.no_grad():
+        predictions = model(images)           # Returns predictions
+    masks = predictions[0]['masks'].cpu().squeeze(1)
+    labels = predictions[0]['labels'].cpu()
+    model.train() # putting back the model into train status/mode 
+    
+    for i in range(len(labels)): # we have one label for each mask
+        Image.fromarray( 255*masks[i].numpy().round() ).show()
+        print(labels[i])
+       
+
 def get_dataloaders(opt):
     # Configure dataloaders
     transforms_train = [
@@ -37,7 +51,8 @@ def get_dataloaders(opt):
                          transforms_target=transforms_target,
                          mode="train",                          
                          HPC_run=opt.HPC_run, 
-                         remove_background = opt.remove_background,                         
+                         remove_background = opt.remove_background,   
+                         person_detection = opt.person_detection
                      )
     
     dataset_test = ImageDataset("../data/%s" % opt.dataset_name, 
@@ -45,7 +60,8 @@ def get_dataloaders(opt):
                          transforms_target=transforms_target,
                          mode="train", # we are splitting data later, so all will be in train folder
                          HPC_run=opt.HPC_run, 
-                         remove_background = opt.remove_background,                         
+                         remove_background = opt.remove_background,   
+                         person_detection = opt.person_detection
                      )
     
      # split the dataset in train and test set
