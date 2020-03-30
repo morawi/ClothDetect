@@ -19,10 +19,11 @@ def number_of_classes(dataset_name='ClothCoParse'):
 
 class ImageDataset(Dataset):
     def __init__(self, root, transforms_=None, transforms_target=None,
-                 mode="train", 
+                 mode="train", person_detection=None,
                  HPC_run=False, remove_background=True):
         
         self.remove_background = remove_background # we'll have to add it as an argument later
+        self.person_detection =person_detection
         
         if transforms_ != None:
             self.transforms = transforms.Compose(transforms_) # image transform
@@ -46,12 +47,12 @@ class ImageDataset(Dataset):
         image_A = Image.open(self.files_A[index % len(self.files_A)]) # read the image, according to the file name, index select which image to read; index=1 means get the first image in the list self.files_A
 
                
-        if self.remove_background: 
-            mm = 255*np.int8(mask>0) # thresholding the mask
-            mm = Image.fromarray(mm).convert('RGB')            
-            image_A = ImageChops.multiply(image_A, mm)
-        
-                
+        if self.remove_background or self.person_detection is not None: 
+            mm = np.int8(mask>0) # thresholding the mask            
+            image_A = ImageChops.multiply(image_A, Image.fromarray(255*mm).convert('RGB') )
+            if self.person_detection is not None:
+                mask = mm # this is a binary mask
+                        
         # instances are encoded as different colors
         obj_ids = np.unique(mask)[1:] # first id is the background, so remove it
         
