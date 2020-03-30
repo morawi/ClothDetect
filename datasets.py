@@ -47,7 +47,7 @@ class ImageDataset(Dataset):
 
                
         if self.remove_background: 
-            mm = np.int8(mask>0) # thresholding the mask
+            mm = 255*np.int8(mask>0) # thresholding the mask
             mm = Image.fromarray(mm).convert('RGB')            
             image_A = ImageChops.multiply(image_A, mm)
         
