@@ -16,7 +16,7 @@ import utils
 def get_dataloaders(opt):
     # Configure dataloaders
     transforms_train = [
-        transforms.Resize((opt.img_height, opt.img_width), Image.BICUBIC),
+        # transforms.Resize((opt.img_height, opt.img_width), Image.BICUBIC),
         transforms.ToTensor(),
         transforms.Normalize( (.5, )*3, (.5, )*3),
     ]
