@@ -20,47 +20,46 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from")
-parser.add_argument("--num_epochs", type=int, default=200, help="number of epochs of training")
+parser.add_argument("--num_epochs", type=int, default=300, help="number of epochs of training")
 parser.add_argument("--dataset_name", type=str, default="ClothCoParse", help="name of the dataset")
-parser.add_argument("--batch_size", type=int, default=2, help="size of the batches")
-parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
-parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--decay_epoch", type=int, default=100, help="epoch from which to start lr decay")
+parser.add_argument("--batch_size", type=int, default=8, help="size of the batches")
+parser.add_argument("--lr", type=float, default=0.005, help="adam: learning rate")
 parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
 parser.add_argument("--img_height", type=int, default=512, help="size of image height")
 parser.add_argument("--img_width", type= int, default=512, help="size of image width")
-
-parser.add_argument("--sample_interval", type=int, default=100, help="interval between sampling of images from generators")
+parser.add_argument("--evaluate_interval", type=int, default=50, help="interval between sampling of images from generators")
 parser.add_argument("--checkpoint_interval", type=int, default=50, help="interval between model checkpoints")
 parser.add_argument("--HPC_run", type=int, default=0, help="if 1, sets to true if running on HPC: default is 0 which reads to False")
 parser.add_argument("--remove_background", type=int, default=0, help="if 1, sets to true if: default is 1 which reads to False")
 parser.add_argument("--redirect_std_to_file", type =int, default=0, help="set all console output to file: default is 0 which reads to False")
 parser.add_argument("--train_percentage", type=float, default=0.8, help="percentage of samples used in training, the rest used for testing")
 parser.add_argument("--experiment_name", type=str, default=None, help="name of the folder inside saved_models")
-
-
+parser.add_argument("--print_freq", type=int, default=100, help="progress print out freq")
 
 opt = parser.parse_args()
-
+opt.train_shuffle = True 
 if platform.system()=='Windows':
     opt.n_cpu= 0
 
-opt.train_shuffle = False
+
+# this used for debuging
 opt.batch_size = 2
-opt.num_epochs = 11
-opt.print_freq = 10
-opt.checkpoint_interval=10
-opt.train_percentage=0.80 #0.02 # to be used for debugging with low number of samples
-opt.epoch=0
-opt.experiment_name = None # 'ClothCoParse-mask_rcnn-Mar-26-at-21-2'
-opt.sample_interval=5
+# opt.num_epochs = 11
+# opt.print_freq = 10
+# opt.checkpoint_interval=10
+# opt.train_percentage=0.80 #0.02 # to be used for debugging with low number of samples
+# opt.epoch=0
+# opt.experiment_name = None # 'ClothCoParse-mask_rcnn-Mar-26-at-21-2'
+# opt.sample_interval=5
 
 def sample_images(data_loader_test, model, device):
     images,targets = next(iter(data_loader_test)) # grab the images
     images = list(image.to(device) for image in images)
     model.eval()  # setting model to evaluation mode
-    predictions = model(images)           # Returns predictions
+    with torch.no_grad():
+        predictions = model(images)           # Returns predictions
+    masks = predictions[0]['masks'].cpu().squeeze(1)
+    labels = predictions[0]['labels'].cpu()
     model.train() # putting back the model into train status/mode 
     
     
@@ -68,10 +67,6 @@ def sample_images(data_loader_test, model, device):
     
 
 
-if platform.system()=='Windows':
-    opt.n_cpu= 0 
-
-print(opt)
 
 # sanity check
 if opt.epoch !=0 and opt.experiment_name is None:
@@ -84,6 +79,13 @@ else: # totaly new experiment
     opt.experiment_name = opt.dataset_name+'/'+"mask_rcnn-"+calendar.month_abbr[dt.month]+"-"+str(dt.day)+'-at-'+str(dt.hour) +'-'+str(dt.minute)
     os.makedirs("images/%s" % opt.experiment_name, exist_ok=True)
     os.makedirs("saved_models/%s" % opt.experiment_name, exist_ok=True)
+
+if  opt.redirect_std_to_file:    
+    out_file_name = "saved_models/%s" % opt.experiment_name
+    print('Output sent to ', out_file_name)
+    sys.stdout = open(out_file_name+'.txt',  'w')
+
+print(opt)
 
 
 # train on the GPU or on the CPU, if a GPU is not available
@@ -103,7 +105,7 @@ model.to(device)
 
 # construct an optimizer
 params = [p for p in model.parameters() if p.requires_grad]
-optimizer = torch.optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
+optimizer = torch.optim.SGD(params, lr=opt.lr, momentum=0.9, weight_decay=0.0005)
 # and a learning rate scheduler
 lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                step_size=3,
@@ -118,14 +120,13 @@ for epoch in range(opt.num_epochs):
     lr_scheduler.step()
     # evaluate on the test dataset    
     
-    if epoch % opt.sample_interval == 0:
-        # evaluate(model, data_loader, device=device) # used for debugging
+    if epoch % opt.evaluate_interval == 0:
         evaluate(model, data_loader_test, device=device)
         
     
     if opt.checkpoint_interval != -1 and epoch % opt.checkpoint_interval== 0:
        # Save model checkpoints
-       print('Saving model')
+       print('Saving model ...')
        torch.save(model.state_dict(), "saved_models/%s/maskrcnn_%d.pth" % (opt.experiment_name, epoch))
        
 
