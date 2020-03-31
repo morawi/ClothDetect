@@ -43,8 +43,8 @@ if platform.system()=='Windows':
     opt.n_cpu= 0
 
 # this used for debuging
-opt.batch_size = 2
-opt.person_detection=1
+# opt.batch_size = 2
+# opt.person_detection=1
 # opt.num_epochs = 11
 # opt.print_freq = 10
 # opt.checkpoint_interval=10
