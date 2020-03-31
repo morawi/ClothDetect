@@ -47,10 +47,10 @@ class ImageDataset(Dataset):
         image_A = Image.open(self.files_A[index % len(self.files_A)]) # read the image, according to the file name, index select which image to read; index=1 means get the first image in the list self.files_A
 
                
-        if self.remove_background or self.person_detection is not None: 
+        if self.remove_background or self.person_detection: 
             mm = np.int8(mask>0) # thresholding the mask            
             image_A = ImageChops.multiply(image_A, Image.fromarray(255*mm).convert('RGB') )
-            if self.person_detection is not None:
+            if self.person_detection:
                 mask = mm # this is a binary mask
                         
         # instances are encoded as different colors

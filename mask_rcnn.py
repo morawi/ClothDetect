@@ -30,19 +30,21 @@ parser.add_argument("--evaluate_interval", type=int, default=50, help="interval 
 parser.add_argument("--checkpoint_interval", type=int, default=50, help="interval between model checkpoints")
 parser.add_argument("--HPC_run", type=int, default=0, help="if 1, sets to true if running on HPC: default is 0 which reads to False")
 parser.add_argument("--remove_background", type=int, default=0, help="if 1, sets to true if: default is 1 which reads to False")
+parser.add_argument("--person_detection", type=int, default=0, help="if 1, will build a model to detect persons")
+parser.add_argument("--train_shuffle", type=int, default=1, help="if 1 shuffle, if 0 don't")
 parser.add_argument("--redirect_std_to_file", type =int, default=0, help="set all console output to file: default is 0 which reads to False")
 parser.add_argument("--train_percentage", type=float, default=0.8, help="percentage of samples used in training, the rest used for testing")
 parser.add_argument("--experiment_name", type=str, default=None, help="name of the folder inside saved_models")
 parser.add_argument("--print_freq", type=int, default=100, help="progress print out freq")
 
 opt = parser.parse_args()
-opt.train_shuffle = True 
+ 
 if platform.system()=='Windows':
     opt.n_cpu= 0
 
-
 # this used for debuging
-# opt.batch_size = 2
+opt.batch_size = 2
+opt.person_detection=1
 # opt.num_epochs = 11
 # opt.print_freq = 10
 # opt.checkpoint_interval=10
