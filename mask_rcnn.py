@@ -17,7 +17,6 @@ import calendar
 import os
 import sys
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from")
 parser.add_argument("--num_epochs", type=int, default=300, help="number of epochs of training")
@@ -43,7 +42,7 @@ if platform.system()=='Windows':
 
 
 # this used for debuging
-opt.batch_size = 2
+# opt.batch_size = 2
 # opt.num_epochs = 11
 # opt.print_freq = 10
 # opt.checkpoint_interval=10
@@ -51,20 +50,6 @@ opt.batch_size = 2
 # opt.epoch=0
 # opt.experiment_name = None # 'ClothCoParse-mask_rcnn-Mar-26-at-21-2'
 # opt.sample_interval=5
-
-def sample_images(data_loader_test, model, device):
-    images,targets = next(iter(data_loader_test)) # grab the images
-    images = list(image.to(device) for image in images)
-    model.eval()  # setting model to evaluation mode
-    with torch.no_grad():
-        predictions = model(images)           # Returns predictions
-    masks = predictions[0]['masks'].cpu().squeeze(1)
-    labels = predictions[0]['labels'].cpu()
-    model.train() # putting back the model into train status/mode 
-    
-    
-    ''' TODO: Do something with the predictions, ie display / save '''
-    
 
 
 
