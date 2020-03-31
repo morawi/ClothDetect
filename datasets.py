@@ -11,10 +11,25 @@ import sys
 # https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html
 
 
+def get_clothCoParse_class_names(): 
+    # names ordered according to label id, 0 for background and 59 for wedges
+    
+    ClothCoParse_class_names = ['background',  'accessories',  'bag',  'belt',  'blazer',
+ 'blouse',  'bodysuit',  'boots',  'bra',  'bracelet',  'cape',  'cardigan',
+ 'clogs', 'coat',  'dress', 'earrings', 'flats', 'glasses', 'gloves', 'hair',
+ 'hat', 'heels', 'hoodie', 'intimate', 'jacket', 'jeans', 'jumper', 'leggings',
+ 'loafers', 'necklace', 'panties', 'pants', 'pumps', 'purse', 'ring', 'romper',
+ 'sandals', 'scarf', 'shirt', 'shoes', 'shorts', 'skin', 'skirt', 'sneakers',
+ 'socks', 'stockings', 'suit', 'sunglasses', 'sweater', 'sweatshirt', 'swimwear',
+ 't-shirt', 'tie', 'tights', 'top', 'vest', 'wallet', 'watch', 'wedges']
+    
+    return ClothCoParse_class_names
+    
 
 def number_of_classes(dataset_name='ClothCoParse'):
     if dataset_name=='ClothCoParse':
-        return (59 + 1) # 1 for background
+        return(len(get_clothCoParse_class_names())) # this should do
+        # return (59 + 1) # should be 59 in total, will change it later
 
 
 class ImageDataset(Dataset):
