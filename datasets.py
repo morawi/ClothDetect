@@ -19,7 +19,7 @@ def number_of_classes(dataset_name='ClothCoParse'):
 
 class ImageDataset(Dataset):
     def __init__(self, root, transforms_=None, transforms_target=None,
-                 mode="train", person_detection=None,
+                 mode="train", person_detection=False,
                  HPC_run=False, remove_background=True):
         
         self.remove_background = remove_background # we'll have to add it as an argument later

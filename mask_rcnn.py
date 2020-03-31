@@ -24,27 +24,33 @@ parser.add_argument("--dataset_name", type=str, default="ClothCoParse", help="na
 parser.add_argument("--batch_size", type=int, default=8, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.005, help="adam: learning rate")
 parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
-parser.add_argument("--img_height", type=int, default=512, help="size of image height")
-parser.add_argument("--img_width", type= int, default=512, help="size of image width")
 parser.add_argument("--evaluate_interval", type=int, default=50, help="interval between sampling of images from generators")
 parser.add_argument("--checkpoint_interval", type=int, default=50, help="interval between model checkpoints")
-parser.add_argument("--HPC_run", type=int, default=0, help="if 1, sets to true if running on HPC: default is 0 which reads to False")
-parser.add_argument("--remove_background", type=int, default=0, help="if 1, sets to true if: default is 1 which reads to False")
-parser.add_argument("--person_detection", type=int, default=0, help="if 1, will build a model to detect persons")
-parser.add_argument("--train_shuffle", type=int, default=1, help="if 1 shuffle, if 0 don't")
-parser.add_argument("--redirect_std_to_file", type =int, default=0, help="set all console output to file: default is 0 which reads to False")
 parser.add_argument("--train_percentage", type=float, default=0.8, help="percentage of samples used in training, the rest used for testing")
 parser.add_argument("--experiment_name", type=str, default=None, help="name of the folder inside saved_models")
 parser.add_argument("--print_freq", type=int, default=100, help="progress print out freq")
 
+parser.add_argument("--HPC_run", default=False, type=lambda x: (str(x).lower() == 'true'), help="True/False; -default False; set to True if running on HPC")
+parser.add_argument("--remove_background", default=False, type=lambda x: (str(x).lower() == 'true'), help="True/False; - default False; set to True to remove background from image ")
+parser.add_argument("--person_detection", default=False, type=lambda x: (str(x).lower() == 'true'), help=" True/False; - default is False;  if True will build a model to detect persons")
+parser.add_argument("--train_shuffle", default=True, type=lambda x: (str(x).lower() == 'true'), help="True/False; -default True to shuffle training samples")
+parser.add_argument("--redirect_std_to_file", default=False, type=lambda x: (str(x).lower() == 'true'),  help="True/False - default False; if True sets all console output to file")
+parser.add_argument('--pretrained_model', default=True, type=lambda x: (str(x).lower() == 'true'), help="True/False: default True; True uses a pretrained model")
+
+# parser.add_argument("--img_height", type=int, default=512, help="size of image height")
+# parser.add_argument("--img_width", type= int, default=512, help="size of image width")
+
 opt = parser.parse_args()
- 
+opt.num_epochs = opt.num_epochs+1 # to ensure generating and saving the last model, if any 
 if platform.system()=='Windows':
     opt.n_cpu= 0
 
-# this used for debuging
+
+
+# # this used for debuging
+# opt.pretrained_model=True
 # opt.batch_size = 2
-# opt.person_detection=1
+# opt.person_detection=True
 # opt.num_epochs = 11
 # opt.print_freq = 10
 # opt.checkpoint_interval=10
@@ -52,7 +58,6 @@ if platform.system()=='Windows':
 # opt.epoch=0
 # opt.experiment_name = None # 'ClothCoParse-mask_rcnn-Mar-26-at-21-2'
 # opt.sample_interval=5
-
 
 
 # sanity check
@@ -82,7 +87,7 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 data_loader, data_loader_test = get_dataloaders(opt)
 
-model = get_model_instance_segmentation( number_of_classes(opt.dataset_name) )    
+model = get_model_instance_segmentation( number_of_classes(opt.dataset_name), pretrained_model=opt.pretrained_model )    
 if opt.epoch != 0:
     # Load pretrained models
     print("loading model %s maskrcnn_%d.pth" % (opt.experiment_name, opt.epoch) )        
