@@ -22,7 +22,7 @@ parser.add_argument("--epoch", type=int, default=0, help="epoch to start trainin
 parser.add_argument("--num_epochs", type=int, default=300, help="number of epochs of training")
 parser.add_argument("--dataset_name", type=str, default="ClothCoParse", help="name of the dataset")
 parser.add_argument("--batch_size", type=int, default=8, help="size of the batches")
-parser.add_argument("--lr", type=float, default=0.005, help="adam: learning rate")
+parser.add_argument("--lr", type=float, default=0.005, help="learning rate")
 parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
 parser.add_argument("--evaluate_interval", type=int, default=50, help="interval between sampling of images from generators")
 parser.add_argument("--checkpoint_interval", type=int, default=50, help="interval between model checkpoints")
@@ -48,7 +48,7 @@ if platform.system()=='Windows':
 
 
 # # this used for debuging
-# opt.pretrained_model=True
+# opt.pretrained_model=False
 # opt.batch_size = 2
 # opt.person_detection=True
 # opt.num_epochs = 11
@@ -87,7 +87,7 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 data_loader, data_loader_test = get_dataloaders(opt)
 
-model = get_model_instance_segmentation( number_of_classes(opt.dataset_name), pretrained_model=opt.pretrained_model )    
+model = get_model_instance_segmentation( number_of_classes(opt), pretrained_model=opt.pretrained_model )    
 if opt.epoch != 0:
     # Load pretrained models
     print("loading model %s maskrcnn_%d.pth" % (opt.experiment_name, opt.epoch) )        

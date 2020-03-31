@@ -26,8 +26,10 @@ def get_clothCoParse_class_names():
     return ClothCoParse_class_names
     
 
-def number_of_classes(dataset_name='ClothCoParse'):
-    if dataset_name=='ClothCoParse':
+def number_of_classes(opt):
+    if opt.person_detection:
+        return 2
+    else:
         return(len(get_clothCoParse_class_names())) # this should do
         # return (59 + 1) # should be 59 in total, will change it later
 
@@ -61,7 +63,7 @@ class ImageDataset(Dataset):
         mask = annot["groundtruth"]
         image_A = Image.open(self.files_A[index % len(self.files_A)]) # read the image, according to the file name, index select which image to read; index=1 means get the first image in the list self.files_A
 
-               
+            
         if self.remove_background or self.person_detection: 
             mm = np.int8(mask>0) # thresholding the mask            
             image_A = ImageChops.multiply(image_A, Image.fromarray(255*mm).convert('RGB') )
