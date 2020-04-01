@@ -14,6 +14,7 @@ import utils
 
 
 def sample_images(images, targets, model, device):    
+    # Image.fromarray(255*targets[0]['masks'].squeeze(0).numpy()).show()
     images = list(image.to(device) for image in images)
     model.eval()  # setting model to evaluation mode
     with torch.no_grad():
@@ -22,26 +23,31 @@ def sample_images(images, targets, model, device):
     labels = predictions[0]['labels'].cpu()
     model.train() # putting back the model into train status/mode 
     
-    for i in range(len(labels)): # we have one label for each mask
-        Image.fromarray( 255*masks[i].numpy().round() ).show()
-        print(labels[i])
+    
+    print(labels)
+    print(targets[0]['labels'])
+    print('-------------####-----------')
        
+    # for i in range(len(labels)): # we have one label for each mask
+    #     Image.fromarray( 255*masks[i].numpy().round() ).show()
+    #     print(labels[i])
+    # to_pil = transforms.ToPILImage()
+    # to_pil(images[0]).show()
 
 def get_dataloaders(opt):
     # Configure dataloaders
     transforms_train = [
         # transforms.Resize((opt.img_height, opt.img_width), Image.BICUBIC),
         transforms.ToTensor(),
-        transforms.Normalize( (.5, )*3, (.5, )*3),
+        transforms.Normalize( (.5, )*3, (.5, )*3, (.5, )*3),
     ]
     
-    # transforms_target = []
-    # transforms_target.append(transforms.ToTensor())
+   
     transforms_target = None
     
     
     transforms_test = [ transforms.ToTensor(),
-    transforms.Normalize( (.5, )*3, (.5, )*3),
+    transforms.Normalize( (.5, )*3, (.5, )*3, (.5, )*3),
     ]
     
     

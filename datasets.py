@@ -31,8 +31,7 @@ def number_of_classes(opt):
         return 2
     else:
         return(len(get_clothCoParse_class_names())) # this should do
-        # return (59 + 1) # should be 59 in total, will change it later
-
+        
 
 class ImageDataset(Dataset):
     def __init__(self, root, transforms_=None, transforms_target=None,
@@ -65,10 +64,12 @@ class ImageDataset(Dataset):
 
             
         if self.remove_background or self.person_detection: 
-            mm = np.int8(mask>0) # thresholding the mask            
-            image_A = ImageChops.multiply(image_A, Image.fromarray(255*mm).convert('RGB') )
+            mm = np.int8(mask>0) # thresholding the mask                        
             if self.person_detection:
-                mask = mm # this is a binary mask
+                mask = mm # this is a binary mask; Image.fromarray(255*mask).show()
+                self.remove_background=False # background should not be removed in person-detection
+            if self.remove_background:
+                image_A = ImageChops.multiply(image_A, Image.fromarray(255*mm).convert('RGB') )
                         
         # instances are encoded as different colors
         obj_ids = np.unique(mask)[1:] # first id is the background, so remove it
