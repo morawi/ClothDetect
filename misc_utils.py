@@ -13,7 +13,7 @@ import torch
 import utils
 
 
-def sample_images(images, targets, model, device):    
+def sample_images(images, targets, model, device, number_of_classes):    
     # Image.fromarray(255*targets[0]['masks'].squeeze(0).numpy()).show()
     images = list(image.to(device) for image in images)
     model.eval()  # setting model to evaluation mode
@@ -21,6 +21,7 @@ def sample_images(images, targets, model, device):
         predictions = model(images)           # Returns predictions
     masks = predictions[0]['masks'].cpu().squeeze(1)
     labels = predictions[0]['labels'].cpu()
+    scores = predictions[0]['scores'].cpu() # scores are already sorted
     model.train() # putting back the model into train status/mode 
     
     
@@ -28,11 +29,12 @@ def sample_images(images, targets, model, device):
     print(targets[0]['labels'])
     print('-------------####-----------')
        
-    # for i in range(len(labels)): # we have one label for each mask
-    #     Image.fromarray( 255*masks[i].numpy().round() ).show()
-    #     print(labels[i])
-    # to_pil = transforms.ToPILImage()
-    # to_pil(images[0]).show()
+    for i in range(number_of_classes-1): # we have one label for each mask
+         Image.fromarray( 255*masks[i].numpy().round() ).show()
+         print('label:', labels[i], ', score:', scores[i])
+    to_pil = transforms.ToPILImage()
+    to_pil(images[0].cpu()).show()
+    
 
 def get_dataloaders(opt):
     # Configure dataloaders
