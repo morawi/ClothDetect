@@ -29,6 +29,7 @@ parser.add_argument("--checkpoint_interval", type=int, default=50, help="interva
 parser.add_argument("--train_percentage", type=float, default=0.8, help="percentage of samples used in training, the rest used for testing")
 parser.add_argument("--experiment_name", type=str, default=None, help="name of the folder inside saved_models")
 parser.add_argument("--print_freq", type=int, default=100, help="progress print out freq")
+parser.add_argument("--lr_scheduler", type=str, default='StepLR', help="lr scheduler: CyclicLR, OneCycleLR, ExponentialLR, and StepLR")
 
 parser.add_argument("--HPC_run", default=False, type=lambda x: (str(x).lower() == 'true'), help="True/False; -default False; set to True if running on HPC")
 parser.add_argument("--remove_background", default=False, type=lambda x: (str(x).lower() == 'true'), help="True/False; - default False; set to True to remove background from image ")
@@ -37,8 +38,6 @@ parser.add_argument("--train_shuffle", default=True, type=lambda x: (str(x).lowe
 parser.add_argument("--redirect_std_to_file", default=False, type=lambda x: (str(x).lower() == 'true'),  help="True/False - default False; if True sets all console output to file")
 parser.add_argument('--pretrained_model', default=True, type=lambda x: (str(x).lower() == 'true'), help="True/False: default True; True uses a pretrained model")
 
-# parser.add_argument("--img_height", type=int, default=512, help="size of image height")
-# parser.add_argument("--img_width", type= int, default=512, help="size of image width")
 
 opt = parser.parse_args()
 opt.num_epochs = opt.num_epochs+1 # to ensure generating and saving the last model, if any 
@@ -51,6 +50,8 @@ if platform.system()=='Windows':
 # opt.pretrained_model=False
 # opt.batch_size = 2
 # opt.person_detection=True
+# opt.train_percentage=1 #0.8 # 0.02 # to be used for debugging with low number of samples
+# opt.lr=0.01
 # opt.num_epochs = 11
 # opt.print_freq = 10
 # opt.checkpoint_interval=10
@@ -99,10 +100,15 @@ model.to(device)
 params = [p for p in model.parameters() if p.requires_grad]
 optimizer = torch.optim.SGD(params, lr=opt.lr, momentum=0.9, weight_decay=0.0005)
 # and a learning rate scheduler
-lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                               step_size=3,
-                                               gamma=0.1)
-
+if opt.lr_scheduler=='StepLR':
+    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+elif opt.lr_scheduler=='CyclicLR':
+    lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.00001, max_lr=0.005)
+elif opt.lr_scheduler=='OneCycleLR':
+    lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.01, steps_per_epoch=len(data_loader), epochs=opt.num_epochs)
+elif opt.lr_scheduler=='ExponentialLR':
+    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.09, last_epoch=-1)
+else: print('Incorrect lr_scheduler')
 
 for epoch in range(opt.num_epochs):
     
