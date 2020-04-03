@@ -30,6 +30,7 @@ parser.add_argument("--train_percentage", type=float, default=0.8, help="percent
 parser.add_argument("--experiment_name", type=str, default=None, help="name of the folder inside saved_models")
 parser.add_argument("--print_freq", type=int, default=100, help="progress print out freq")
 parser.add_argument("--lr_scheduler", type=str, default='StepLR', help="lr scheduler: CyclicLR, OneCycleLR, ExponentialLR, and StepLR")
+parser.add_argument("--im_filter", type=str, default='im_filter', help="smooth the input image")
 
 parser.add_argument("--HPC_run", default=False, type=lambda x: (str(x).lower() == 'true'), help="True/False; -default False; set to True if running on HPC")
 parser.add_argument("--remove_background", default=False, type=lambda x: (str(x).lower() == 'true'), help="True/False; - default False; set to True to remove background from image ")
@@ -49,6 +50,7 @@ if platform.system()=='Windows':
 # # this used for debuging
 # opt.pretrained_model=False
 # opt.batch_size = 2
+# opt.lr_scheduler = 'CyclicLR'
 # opt.person_detection=True
 # opt.train_percentage=1 #0.8 # 0.02 # to be used for debugging with low number of samples
 # opt.lr=0.01
@@ -103,7 +105,7 @@ optimizer = torch.optim.SGD(params, lr=opt.lr, momentum=0.9, weight_decay=0.0005
 if opt.lr_scheduler=='StepLR':
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 elif opt.lr_scheduler=='CyclicLR':
-    lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.00001, max_lr=0.005)
+    lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=0.001, max_lr=0.05)
 elif opt.lr_scheduler=='OneCycleLR':
     lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=0.01, steps_per_epoch=len(data_loader), epochs=opt.num_epochs)
 elif opt.lr_scheduler=='ExponentialLR':
@@ -113,11 +115,13 @@ else: print('Incorrect lr_scheduler')
 for epoch in range(opt.num_epochs):
     
     # train for one epoch, printing every 10 iterations
-    train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=opt.print_freq)
-    # update the learning rate
-    lr_scheduler.step()
-    # evaluate on the test dataset    
+    train_one_epoch(model, optimizer, data_loader, device, epoch, 
+                    opt.print_freq, lr_scheduler, opt)
+
+    # # update the learning rate - Depricated, as I moved it inside engine->train_on_epoch()
+    # lr_scheduler.step()
     
+    # evaluate on the test dataset        
     if epoch % opt.evaluate_interval == 0:
         evaluate(model, data_loader_test, device=device)
         
@@ -132,12 +136,3 @@ for epoch in range(opt.num_epochs):
 
 print("All done")
 
-
-
-# images,targets = next(iter(data_loader_test))
-# images = list(image.to(device) for image in images)
-# targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
-# output = model(images,targets)   # Returns losses and detections
-# # For inference
-# model.eval()  # probably not needed here 
-# predictions = model(images)

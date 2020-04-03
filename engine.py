@@ -10,19 +10,19 @@ from coco_eval import CocoEvaluator
 import utils
 
 
-def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
+def train_one_epoch(model, optimizer, data_loader, device, epoch, 
+                    print_freq, lr_scheduler, opt):
     model.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter('lr', utils.SmoothedValue(window_size=1, fmt='{value:.6f}'))
     header = 'Epoch: [{}]'.format(epoch)
 
-    lr_scheduler = None
+    lr_scheduler_warming = None
     if epoch == 0:
         warmup_factor = 1. / 1000
         warmup_iters = min(1000, len(data_loader) - 1)
-
-        lr_scheduler = utils.warmup_lr_scheduler(optimizer, warmup_iters, warmup_factor)
-
+        lr_scheduler_warming = utils.warmup_lr_scheduler(optimizer, warmup_iters, warmup_factor)
+        
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
         images = list(image.to(device) for image in images)
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
@@ -45,12 +45,16 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
         optimizer.zero_grad()
         losses.backward()
         optimizer.step()
-
-        if lr_scheduler is not None:
+        # I had to do two lr_scheduler(s) one for warmup and another for training
+        if lr_scheduler_warming is not None:
+            lr_scheduler_warming.step()
+        elif opt.lr_scheduler=='CyclicLR' or opt.lr_scheduler== 'OneCycleLR':
             lr_scheduler.step()
 
         metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
         metric_logger.update(lr=optimizer.param_groups[0]["lr"])
+    if opt.lr_scheduler=='StepLR':
+        lr_scheduler.step()        
 
 
 def _get_iou_types(model):
