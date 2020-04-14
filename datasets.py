@@ -6,7 +6,8 @@ from PIL import Image, ImageChops # PIL is a nice Python Image Library that we c
 import torchvision.transforms as transforms # torch transform used for computer vision applications
 import numpy as np
 import torch
-import sys
+# import sys
+from PIL import ImageFilter
 
 # https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html
 
@@ -36,10 +37,12 @@ def number_of_classes(opt):
 class ImageDataset(Dataset):
     def __init__(self, root, transforms_=None, transforms_target=None,
                  mode="train", person_detection=False,
-                 HPC_run=False, remove_background=True):
+                 HPC_run=False, remove_background=True,
+                 ):
         
         self.remove_background = remove_background # we'll have to add it as an argument later
         self.person_detection =person_detection
+        
         
         if transforms_ != None:
             self.transforms = transforms.Compose(transforms_) # image transform
@@ -61,7 +64,7 @@ class ImageDataset(Dataset):
         annot = sio.loadmat(self.files_B[index % len(self.files_B)])
         mask = annot["groundtruth"]
         image_A = Image.open(self.files_A[index % len(self.files_A)]) # read the image, according to the file name, index select which image to read; index=1 means get the first image in the list self.files_A
-
+       
             
         if self.remove_background or self.person_detection: 
             mm = np.int8(mask>0) # thresholding the mask                        
