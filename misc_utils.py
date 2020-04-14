@@ -11,10 +11,25 @@ from datasets import ImageDataset
 from torch.utils.data import DataLoader
 import torch
 import utils
+import numpy as np
+from datasets import get_clothCoParse_class_names
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
+import sys
 
 
-def sample_images(images, targets, model, device, number_of_classes):    
-    # Image.fromarray(255*targets[0]['masks'].squeeze(0).numpy()).show()
+def get_any_image():
+
+    Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
+    filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
+    # if  not filename:
+    #     print("Program ended: Canceling selecting an image")
+    #     sys.exit(0)
+    return filename
+
+def sample_images(images, targets, model, device, number_of_classes):   
+    score_threshold = 0.8     
+    class_name = get_clothCoParse_class_names() 
     images = list(image.to(device) for image in images)
     model.eval()  # setting model to evaluation mode
     with torch.no_grad():
@@ -22,26 +37,31 @@ def sample_images(images, targets, model, device, number_of_classes):
     masks = predictions[0]['masks'].cpu().squeeze(1)
     labels = predictions[0]['labels'].cpu()
     scores = predictions[0]['scores'].cpu() # scores are already sorted
-    model.train() # putting back the model into train status/mode 
-    
-    
-    print(labels)
-    print(targets[0]['labels'])
-    print('-------------####-----------')
        
-    for i in range(number_of_classes-1): # we have one label for each mask
-         Image.fromarray( 255*masks[i].numpy().round() ).show()
-         print('label:', labels[i], ', score:', scores[i])
+    np.set_printoptions(precision=2) 
+    print("scores", scores.numpy())
+    print('detected labels', labels.numpy())    
+    print('sorted detected labels', labels.sort()[0].numpy())        
+    print('original labels', targets[0]['labels'].sort()[0].numpy())
+    print('detected labels', labels[scores>score_threshold].sort()[0].numpy(), '>scor_thr', score_threshold)
+    print('-------------# # # #-----------')
+       
     to_pil = transforms.ToPILImage()
     to_pil(images[0].cpu()).show()
     
-
-def get_dataloaders(opt):
-    # Configure dataloaders
+       
+    for i in range(len(labels)): # we have one label for each mask
+        if scores[i].item()>score_threshold:
+            Image.fromarray( 255*masks[i].numpy().round() ).show()
+            print('label:', labels[i].item(), ', score: {:.2f}'.format(scores[i].numpy()), 'class is', class_name[labels[i]])
+       
+    model.train() # putting back the model into train status/mode 
+    
+def get_transforms():
     transforms_train = [
-        # transforms.Resize((opt.img_height, opt.img_width), Image.BICUBIC),
-        transforms.ToTensor(),
-        transforms.Normalize( (.5, )*3, (.5, )*3, (.5, )*3),
+    # transforms.Resize((opt.img_height, opt.img_width), Image.BICUBIC),
+    transforms.ToTensor(),
+    transforms.Normalize( (.5, )*3, (.5, )*3, (.5, )*3),
     ]
     
    
@@ -52,6 +72,11 @@ def get_dataloaders(opt):
     transforms.Normalize( (.5, )*3, (.5, )*3, (.5, )*3),
     ]
     
+    return transforms_train, transforms_test, transforms_target
+    
+def get_dataloaders(opt):
+    # Configure dataloaders
+    transforms_train, transforms_test, transforms_target = get_transforms()
     
     
     dataset = ImageDataset("../data/%s" % opt.dataset_name, 
