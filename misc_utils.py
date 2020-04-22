@@ -7,19 +7,18 @@ Created on Wed Mar 25 17:14:25 2020
 
 import torchvision.transforms as transforms # torch transform used for computer vision applications
 from PIL import Image
-from datasets import ImageDataset
+from datasets import ImageDataset, get_clothCoParse_class_names
 from torch.utils.data import DataLoader
 import torch
 import utils
 import numpy as np
-from datasets import get_clothCoParse_class_names
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
+from modanet_dataset import ModanetDataset
 import sys
 
 
 def get_any_image():
-
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
     filename = askopenfilename() # show an "Open" dialog box and return the path to the selected file
     # if  not filename:
@@ -61,16 +60,12 @@ def get_transforms():
     transforms_train = [
     # transforms.Resize((opt.img_height, opt.img_width), Image.BICUBIC),
     transforms.ToTensor(),
-    transforms.Normalize( (.5, )*3, (.5, )*3, (.5, )*3),
-    ]
-    
+    transforms.Normalize( (.5, )*3, (.5, )*3, (.5, )*3),     ]    
    
     transforms_target = None
     
-    
     transforms_test = [ transforms.ToTensor(),
-    transforms.Normalize( (.5, )*3, (.5, )*3, (.5, )*3),
-    ]
+    transforms.Normalize( (.5, )*3, (.5, )*3, (.5, )*3),    ]
     
     return transforms_train, transforms_test, transforms_target
     
@@ -78,31 +73,44 @@ def get_dataloaders(opt):
     # Configure dataloaders
     transforms_train, transforms_test, transforms_target = get_transforms()
     
-    
-    dataset = ImageDataset("../data/%s" % opt.dataset_name, 
-                         transforms_ = transforms_train, 
-                         transforms_target=transforms_target,
-                         mode="train",                          
-                         HPC_run=opt.HPC_run, 
-                         remove_background = opt.remove_background,   
-                         person_detection = opt.person_detection
-                     )
-    
-    dataset_test = ImageDataset("../data/%s" % opt.dataset_name, 
-                         transforms_ = transforms_test, 
-                         transforms_target=transforms_target,
-                         mode="train", # we are splitting data later, so all will be in train folder
-                         HPC_run=opt.HPC_run, 
-                         remove_background = opt.remove_background,   
-                         person_detection = opt.person_detection
-                     )
-    
-     # split the dataset in train and test set
+    if opt.dataset_name=='Modanet':
+        dataset=ModanetDataset("../data/%s" % opt.dataset_name, 
+                             transforms_ = transforms_train,                             
+                             HPC_run=opt.HPC_run, )
+        dataset_test=ModanetDataset("../data/%s" % opt.dataset_name, 
+                              transforms_ = transforms_test,                             
+                              HPC_run=opt.HPC_run, )
+       
+    elif opt.dataset_name=='ClothCoParse':
+                
+        dataset = ImageDataset("../data/%s" % opt.dataset_name, 
+                             transforms_ = transforms_train, 
+                             transforms_target=transforms_target,
+                             mode="train",                          
+                             HPC_run=opt.HPC_run, 
+                             remove_background = opt.remove_background,   
+                             person_detection = opt.person_detection
+                         )
+        
+        dataset_test = ImageDataset("../data/%s" % opt.dataset_name, 
+                             transforms_ = transforms_test, 
+                             transforms_target=transforms_target,
+                             mode="train", # we are splitting data later, so all will be in train folder
+                             HPC_run=opt.HPC_run, 
+                             remove_background = opt.remove_background,   
+                             person_detection = opt.person_detection
+                         )
+    else: 
+        print( opt.dataset_name, " is incorrect dataset name, please select another one")
+        sys.exit(0)
+                    
+    num_classes = dataset.number_of_classes(opt) # for some reason, number_of_classes will be lost if we move this line down after the block
+    # split the dataset in train and test set
     train_samples = int(len(dataset)*opt.train_percentage)
     indices = torch.randperm(len(dataset)).tolist()
     dataset = torch.utils.data.Subset(dataset, indices[:train_samples])
     dataset_test = torch.utils.data.Subset(dataset_test, indices[train_samples:])
-
+   
    
     dataloader = DataLoader(
         dataset,
@@ -123,4 +131,4 @@ def get_dataloaders(opt):
         
     )
     
-    return dataloader, data_loader_test
+    return dataloader, data_loader_test, num_classes
