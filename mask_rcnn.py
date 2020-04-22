@@ -5,7 +5,7 @@ Created on Tue Mar 24 13:35:25 2020
 @author: malrawi
 """
 
-from datasets import number_of_classes
+# from datasets import number_of_classes
 from models import get_model_instance_segmentation
 from engine import train_one_epoch, evaluate
 from misc_utils import get_dataloaders
@@ -20,18 +20,16 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from")
 parser.add_argument("--num_epochs", type=int, default=300, help="number of epochs of training")
-parser.add_argument("--dataset_name", type=str, default="ClothCoParse", help="name of the dataset")
-parser.add_argument("--batch_size", type=int, default=8, help="size of the batches")
+parser.add_argument("--dataset_name", type=str, default="Modanet", help="name of the dataset: ClothCoParse or Modanet ")
+parser.add_argument("--batch_size", type=int, default=4, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.005, help="learning rate")
 parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
 parser.add_argument("--evaluate_interval", type=int, default=50, help="interval between sampling of images from generators")
 parser.add_argument("--checkpoint_interval", type=int, default=50, help="interval between model checkpoints")
-parser.add_argument("--train_percentage", type=float, default=0.8, help="percentage of samples used in training, the rest used for testing")
+parser.add_argument("--train_percentage", type=float, default=0.9, help="percentage of samples used in training, the rest used for testing")
 parser.add_argument("--experiment_name", type=str, default=None, help="name of the folder inside saved_models")
 parser.add_argument("--print_freq", type=int, default=100, help="progress print out freq")
-
-parser.add_argument("--job_name", type=str, default='none', help="Job name")
-
+parser.add_argument("--lr_scheduler", type=str, default='OneCycleLR', help="lr scheduler name, one of: OneCycleLR, CyclicLR StepLR, ExponentialLR ")
 
 parser.add_argument("--HPC_run", default=False, type=lambda x: (str(x).lower() == 'true'), help="True/False; -default False; set to True if running on HPC")
 parser.add_argument("--remove_background", default=False, type=lambda x: (str(x).lower() == 'true'), help="True/False; - default False; set to True to remove background from image ")
@@ -46,12 +44,11 @@ opt.num_epochs = opt.num_epochs+1 # to ensure generating and saving the last mod
 if platform.system()=='Windows':
     opt.n_cpu= 0
 
-
-
 # # this used for debuging
 # opt.pretrained_model=False
 opt.batch_size = 2
-# opt.lr_scheduler = 'CyclicLR'
+opt.print_freq = 4
+opt.lr_scheduler = 'StepLR'
 # opt.person_detection=True
 # opt.train_percentage=1 #0.8 # 0.02 # to be used for debugging with low number of samples
 # opt.lr=0.01
@@ -89,9 +86,9 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 # use our dataset and defined transformations
 
-data_loader, data_loader_test = get_dataloaders(opt)
+data_loader, data_loader_test, num_classes = get_dataloaders(opt)
 
-model = get_model_instance_segmentation( number_of_classes(opt), pretrained_model=opt.pretrained_model )    
+model = get_model_instance_segmentation( num_classes, pretrained_model=opt.pretrained_model )    
 if opt.epoch != 0:
     # Load pretrained models
     print("loading model %s maskrcnn_%d.pth" % (opt.experiment_name, opt.epoch) )        
