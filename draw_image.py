@@ -16,11 +16,20 @@ import matplotlib.pyplot as plt
 import cv2
 from misc_utils import get_transforms
 import torch
+from PIL import Image, ImageChops 
 
 INSTANCE_CATEGORY_NAMES = get_clothCoParse_class_names()
 
-def get_prediction(model, img_path, threshold, device):
-  img = Image.open(img_path)
+
+# saving segmented cloths
+def save_masks_as_images(img_name, masks, path, file_name, labels):
+    img = Image.open(img_name)
+    for i in range(len(masks)):        
+        image_A = ImageChops.multiply(img, Image.fromarray(255*masks[i]).convert('RGB') )
+        image_A.save(path+file_name+labels[i]+'.png')
+
+def get_prediction(model, img, threshold, device):
+  # img = Image.open(img_path)
   transforms_train, transforms_test, transforms_target = get_transforms()    
   
   img = [T.Compose(transforms_test)(img).to(device)]      
@@ -46,9 +55,10 @@ def random_colour_masks(image):
 
 
 def instance_segmentation_api(model, img_name, device, threshold=0.5, rect_th=3, text_size=1, text_th=3):
-  masks, boxes, pred_cls = get_prediction(model, img_name, threshold, device)
-  img = cv2.imread(img_name)
-  img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+  img = Image.open(img_name)  
+  img.resize( (550, 850) )
+  masks, boxes, pred_cls = get_prediction(model, img, threshold, device)  
+  img= np.array(img)
   for i in range(len(masks)):
     rgb_mask = random_colour_masks(masks[i])
     img = cv2.addWeighted(img, 1, rgb_mask, 0.5, 0)
