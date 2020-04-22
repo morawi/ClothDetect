@@ -7,7 +7,6 @@ import torchvision.transforms as transforms # torch transform used for computer 
 import numpy as np
 import torch
 # import sys
-from PIL import ImageFilter
 
 # https://pytorch.org/tutorials/intermediate/torchvision_tutorial.html
 
@@ -25,13 +24,6 @@ def get_clothCoParse_class_names():
  't-shirt', 'tie', 'tights', 'top', 'vest', 'wallet', 'watch', 'wedges']
     
     return ClothCoParse_class_names
-    
-
-def number_of_classes(opt):
-    if opt.person_detection:
-        return 2
-    else:
-        return(len(get_clothCoParse_class_names())) # this should do
         
 
 class ImageDataset(Dataset):
@@ -57,7 +49,13 @@ class ImageDataset(Dataset):
         
         self.files_A = sorted(glob.glob(os.path.join(root, "%s/A" % mode) + "/*.*")) # get the source image file-names
         self.files_B = sorted(glob.glob(os.path.join(root, "%s/B" % mode) + "/*.*")) # get the target image file-names
-      
+        
+    def number_of_classes(self, opt):
+        if opt.person_detection:
+            return 2
+        else:
+            return(len(get_clothCoParse_class_names())) # this should do
+  
 
     def __getitem__(self, index):              
                 
@@ -75,16 +73,11 @@ class ImageDataset(Dataset):
                 image_A = ImageChops.multiply(image_A, Image.fromarray(255*mm).convert('RGB') )
                         
         # instances are encoded as different colors
-        obj_ids = np.unique(mask)[1:] # first id is the background, so remove it
-        
-        # split the color-encoded mask into a set
-        # of binary masks
-        masks = mask == obj_ids[:, None, None]
+        obj_ids = np.unique(mask)[1:] # first id is the background, so remove it     
+        masks = mask == obj_ids[:, None, None] # split the color-encoded mask into a set of binary masks
 
         # get bounding box coordinates for each mask
-        num_objs = len(obj_ids)
-                
-        
+        num_objs = len(obj_ids)                       
         boxes = []
         for i in range(num_objs):
             pos = np.where(masks[i])
@@ -94,27 +87,17 @@ class ImageDataset(Dataset):
             ymax = np.max(pos[0])
             boxes.append([xmin, ymin, xmax, ymax])
 
-        # convert everything into a torch.Tensor
-        boxes = torch.as_tensor(boxes, dtype=torch.float32)
-        
-        # there is only one class
-        # labels = torch.ones((num_objs,), dtype=torch.int64) # original, works only for two class problem
-        labels = torch.as_tensor(obj_ids, dtype=torch.int64) # corrected by Rawi
-                
-        masks = torch.as_tensor(masks, dtype=torch.uint8)
-
-        image_id = torch.tensor([index])
+        # convert everything into torch.Tensor
+        boxes = torch.as_tensor(boxes, dtype=torch.float32)      
         area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
-        # suppose all instances are not crowd
-        iscrowd = torch.zeros((num_objs,), dtype=torch.int64)
-
+        
         target = {}
         target["boxes"] = boxes
-        target["labels"] = labels
-        target["masks"] = masks
-        target["image_id"] = image_id
+        target["labels"] = torch.as_tensor(obj_ids, dtype=torch.int64) # corrected by Rawi
+        target["masks"] = torch.as_tensor(masks, dtype=torch.float32) #uint8
+        target["image_id"] = torch.tensor([index])
         target["area"] = area
-        target["iscrowd"] = iscrowd
+        target["iscrowd"] = torch.zeros((num_objs,), dtype=torch.int64) # suppose all instances are not crowd
 
         if self.transforms != None:
             img = self.transforms(image_A)
