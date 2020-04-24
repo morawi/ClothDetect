@@ -94,7 +94,7 @@ class ImageDataset(Dataset):
         target = {}
         target["boxes"] = boxes
         target["labels"] = torch.as_tensor(obj_ids, dtype=torch.int64) # corrected by Rawi
-        target["masks"] = torch.as_tensor(masks, dtype=torch.float32) #uint8
+        target["masks"] = torch.as_tensor(masks, dtype=torch.uint8) #uint8
         target["image_id"] = torch.tensor([index])
         target["area"] = area
         target["iscrowd"] = torch.zeros((num_objs,), dtype=torch.int64) # suppose all instances are not crowd
