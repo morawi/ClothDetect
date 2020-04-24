@@ -17,11 +17,12 @@ import calendar
 import os
 import sys
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from")
 parser.add_argument("--num_epochs", type=int, default=300, help="number of epochs of training")
 parser.add_argument("--dataset_name", type=str, default="Modanet", help="name of the dataset: ClothCoParse or Modanet ")
-parser.add_argument("--batch_size", type=int, default=4, help="size of the batches")
+parser.add_argument("--batch_size", type=int, default=2, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.005, help="learning rate")
 parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
 parser.add_argument("--evaluate_interval", type=int, default=50, help="interval between sampling of images from generators")
@@ -30,6 +31,7 @@ parser.add_argument("--train_percentage", type=float, default=0.9, help="percent
 parser.add_argument("--experiment_name", type=str, default=None, help="name of the folder inside saved_models")
 parser.add_argument("--print_freq", type=int, default=100, help="progress print out freq")
 parser.add_argument("--lr_scheduler", type=str, default='OneCycleLR', help="lr scheduler name, one of: OneCycleLR, CyclicLR StepLR, ExponentialLR ")
+parser.add_argument("--job_name", type=str, default='test', help=" name for the job used in slurm ")
 
 parser.add_argument("--HPC_run", default=False, type=lambda x: (str(x).lower() == 'true'), help="True/False; -default False; set to True if running on HPC")
 parser.add_argument("--remove_background", default=False, type=lambda x: (str(x).lower() == 'true'), help="True/False; - default False; set to True to remove background from image ")
@@ -46,14 +48,15 @@ if platform.system()=='Windows':
 
 # # this used for debuging
 # opt.pretrained_model=False
-opt.batch_size = 2
-opt.print_freq = 4
-opt.lr_scheduler = 'StepLR'
+opt.batch_size = 1
+opt.num_epochs = 1
+opt.print_freq = 100
+opt.checkpoint_interval=1
+opt.train_percentage= 1 # 0.02 # to be used for debugging with low number of samples
+# opt.lr_scheduler = 'StepLR'
 # opt.person_detection=True
-# opt.train_percentage=1 #0.8 # 0.02 # to be used for debugging with low number of samples
+
 # opt.lr=0.01
-# opt.num_epochs = 11
-# opt.print_freq = 10
 # opt.checkpoint_interval=10
 # opt.train_percentage=0.80 #0.02 # to be used for debugging with low number of samples
 # opt.epoch=0
@@ -85,7 +88,6 @@ print(opt)
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 # use our dataset and defined transformations
-
 data_loader, data_loader_test, num_classes = get_dataloaders(opt)
 
 model = get_model_instance_segmentation( num_classes, pretrained_model=opt.pretrained_model )    
@@ -119,15 +121,16 @@ for epoch in range(opt.epoch, opt.num_epochs):
     train_one_epoch(model, optimizer, data_loader, device, epoch, 
                     opt.print_freq, lr_scheduler, opt)
     
-    # evaluate on the test dataset        
-    if epoch % opt.evaluate_interval == 0:
-        evaluate(model, data_loader_test, device=device)
-    
-    # Save model checkpoints
+        # Save model checkpoints
     if opt.checkpoint_interval != -1 and epoch % opt.checkpoint_interval== 0:       
        print('Saving model ...')
        torch.save(model.state_dict(), "saved_models/%s/maskrcnn_%d.pth" % (opt.experiment_name, epoch))
-       
+
+    print('memory used:', torch.cuda.memory_stats(device))
+    # # evaluate on the test dataset        
+    # if epoch % opt.evaluate_interval == 0:
+    #     evaluate(model, data_loader_test, device=device)
+           
 
 # sample_images(data_loader_test, model, device)
 
