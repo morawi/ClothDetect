@@ -8,7 +8,7 @@ Created on Tue Mar 31 01:57:34 2020
 # https://www.learnopencv.com/mask-r-cnn-instance-segmentation-with-pytorch/
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageChops
 import torchvision.transforms as T
 import random
 from datasets import get_clothCoParse_class_names
@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import cv2
 from misc_utils import get_transforms
 import torch
-from PIL import Image, ImageChops 
+
 
 INSTANCE_CATEGORY_NAMES = get_clothCoParse_class_names()
 
@@ -55,8 +55,8 @@ def random_colour_masks(image):
 
 
 def instance_segmentation_api(model, img_name, device, threshold=0.5, rect_th=3, text_size=1, text_th=3):
-  img = Image.open(img_name)  
-  img.resize( (550, 850) )
+  img = Image.open(img_name)  #; img.resize( (550, 850) )
+  img.show()  
   masks, boxes, pred_cls = get_prediction(model, img, threshold, device)  
   img= np.array(img)
   for i in range(len(masks)):
@@ -64,10 +64,5 @@ def instance_segmentation_api(model, img_name, device, threshold=0.5, rect_th=3,
     img = cv2.addWeighted(img, 1, rgb_mask, 0.5, 0)
     cv2.rectangle(img, boxes[i][0], boxes[i][1],color=(0, 255, 0), thickness=rect_th)
     cv2.putText(img,pred_cls[i], boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX, text_size, (0,255,0),thickness=text_th)
-  plt.figure(figsize=(20,30))
-  plt.imshow(img)
-  plt.xticks([])
-  plt.yticks([])
-  plt.show()
-  
+  Image.fromarray(img).show()
 
