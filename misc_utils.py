@@ -58,7 +58,7 @@ def sample_images(images, targets, model, device, number_of_classes):
     
 def get_transforms():
     transforms_train = [
-    # transforms.Resize((opt.img_height, opt.img_width), Image.BICUBIC),
+    # transforms.Resize((opt.img_height, opt.img_width), Image.BICUBIC),    
     transforms.ToTensor(),
     transforms.Normalize( (.5, )*3, (.5, )*3, (.5, )*3),     ]    
    
@@ -70,6 +70,7 @@ def get_transforms():
     return transforms_train, transforms_test, transforms_target
     
 def get_dataloaders(opt):
+    
     # Configure dataloaders
     transforms_train, transforms_test, transforms_target = get_transforms()
     
@@ -105,13 +106,11 @@ def get_dataloaders(opt):
         sys.exit(0)
                     
     num_classes = dataset.number_of_classes(opt) # for some reason, number_of_classes will be lost if we move this line down after the block
+    
     # split the dataset in train and test set
-    train_samples = int(len(dataset)*opt.train_percentage)
-    indices = torch.randperm(len(dataset)).tolist()
-    dataset = torch.utils.data.Subset(dataset, indices[:train_samples])
-    dataset_test = torch.utils.data.Subset(dataset_test, indices[train_samples:])
-   
-   
+    train_samples = int(len(dataset)*opt.train_percentage)    
+    dataset, dataset_test = torch.utils.data.random_split(dataset, [train_samples, len(dataset)-train_samples])
+         
     dataloader = DataLoader(
         dataset,
         batch_size=opt.batch_size,
@@ -130,5 +129,7 @@ def get_dataloaders(opt):
         collate_fn=utils.collate_fn
         
     )
+    
+    
     
     return dataloader, data_loader_test, num_classes
