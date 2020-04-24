@@ -38,6 +38,8 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch,
         loss_value = losses_reduced.item()
 
         if not math.isfinite(loss_value):
+            print(targets[0]['image_id']) # added by Rawi
+            print(targets[1]['image_id']) # added by Rawi
             print("Loss is {}, stopping training".format(loss_value))
             print(loss_dict_reduced)
             sys.exit(1)
